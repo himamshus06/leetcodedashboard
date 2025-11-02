@@ -1,374 +1,356 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DSA Series Monitor</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { font-family: sans-serif; background-color: #f7f9fb; }
-        .card { background-color: white; border-radius: 1rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); padding: 1.5rem; }
-        .monitor-card { transition: all 0.3s ease; border-left: 5px solid transparent; }
-        .monitor-card:hover { border-left: 5px solid #3b82f6; }
-    </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DSA Tracker</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+<style>
+body { font-family: Inter, sans-serif; }
+.arrow { transition: transform .25s ease; }
+</style>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+  }
+</script>
 </head>
-<body>
-    <div id="app" class="min-h-screen p-4 sm:p-8">
-        <header class="text-center mb-8">
-            <h1 class="text-4xl font-extrabold text-gray-900 mb-2">DSA Series Tracker</h1>
-            <p class="text-gray-500">Monitor your participants' LeetCode activity</p>
-            <div id="auth-info" class="text-xs mt-3 p-2 bg-blue-100 text-blue-800 rounded-lg max-w-lg mx-auto">
-                Authentication loading...
-            </div>
-        </header>
 
-        <main class="max-w-4xl mx-auto">
-            <section class="card mb-6">
-                <h2 class="text-xl font-semibold mb-4">Coordinator Controls</h2>
-                <form id="participant-form" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <input id="name-input" type="text" placeholder="Participant Name" class="border rounded px-3 py-2" required>
-                    <input id="handle-input" type="text" placeholder="LeetCode Handle" class="border rounded px-3 py-2" required>
-                    <button id="add-btn" type="submit" class="bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700">Add Participant</button>
-                </form>
-                <p id="form-error" class="text-sm text-red-600 mt-2 hidden"></p>
-            </section>
+<body class="bg-white text-black dark:bg-[#0f0f0f] dark:text-white p-6">
 
-            <section class="card">
-                <div class="flex items-center justify-between mb-3">
-                    <h2 class="text-xl font-semibold">Participants</h2>
-                    <span id="participant-count" class="text-sm text-gray-500">0</span>
-                </div>
-                <div id="participants-list" class="space-y-3"></div>
-            </section>
-        </main>
 
-        <!-- Modal Root -->
-        <div id="modal-root" class="fixed inset-0 hidden items-center justify-center z-50">
-            <div class="absolute inset-0 bg-black/40"></div>
-            <div class="relative bg-white rounded-xl shadow-xl max-w-md w-11/12 p-5">
-                <h3 id="modal-title" class="text-lg font-semibold mb-2">Confirm</h3>
-                <p id="modal-message" class="text-gray-700 mb-4"></p>
-                <div class="flex justify-end gap-2">
-                    <button id="modal-cancel" class="px-4 py-2 rounded border border-gray-300">Cancel</button>
-                    <button id="modal-ok" class="px-4 py-2 rounded bg-blue-600 text-white">OK</button>
-                </div>
-            </div>
+<header class="text-center mb-10 mt-4">
+  <h1 class="text-4xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+    DSA Tracker
+  </h1>
+  <p class="text-gray-600 dark:text-gray-400 mt-1">Monitor LeetCode activity</p>
+
+  <div id="auth-info"
+       class="mt-2 inline-flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-full bg-white dark:bg-black shadow-sm">
+    Authenticating...
+  </div>
+
+  <!-- Dark mode toggle -->
+  <button id="themeToggle"
+  class="mt-3 px-3 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-700 dark:text-gray-200">
+  <span id="themeIcon">🌙</span> <span id="themeText">Dark Mode</span>
+</button>
+
+</header>
+
+<div class="max-w-4xl mx-auto">
+
+  <!-- Add Participant Button -->
+  <div class="flex justify-end mb-4">
+    <button id="openAddModal"
+      class="bg-black dark:bg-white dark:text-black text-white px-4 py-2 rounded-lg hover:opacity-80 transition flex items-center gap-2">
+      ➕ Add Participant
+    </button>
+  </div>
+
+  <!-- Add Modal -->
+  <div id="addModal"
+       class="hidden fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center">
+    <div class="bg-white dark:bg-[#0f0f0f] w-full max-w-md rounded-xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
+
+      <h3 class="text-lg font-semibold dark:text-gray-100 mb-1">Add Participant</h3>
+      <p class="text-gray-500 dark:text-gray-400 text-sm mb-5">Enter details</p>
+
+      <form id="participant-form" class="space-y-4">
+        <input id="name-input" type="text" placeholder="Name"
+           class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2.5 text-sm bg-white dark:bg-black dark:text-white" required>
+
+        <input id="handle-input" type="text" placeholder="LeetCode Handle"
+           class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2.5 text-sm bg-white dark:bg-black dark:text-white" required>
+
+        <p id="form-error" class="text-sm text-red-600 dark:text-red-400 hidden"></p>
+
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" id="closeAddModal" class="text-gray-600 dark:text-gray-300 text-sm">Cancel</button>
+          <button class="bg-black text-white dark:bg-white dark:text-black px-4 py-2 text-sm rounded-lg">
+            Add
+          </button>
         </div>
+      </form>
     </div>
-    <script>
-        // Use any shared string for all coordinators who should see the same data
-        window.__app_id = 'my-dsa-series';
-    
-        // Paste your Firebase config object below, wrapped with JSON.stringify
-        window.__firebase_config = JSON.stringify({
-          apiKey: "AIzaSyBycjUTbfinX-rYAz30vXFMIY3BQS3iBQI",
-          authDomain: "leetcodedashboard-fe04c.firebaseapp.com",
-          projectId: "leetcodedashboard-fe04c",
-          appId: "1:765406102827:web:c85c7e1fba31279633b16e"
-          // Optional: storageBucket, messagingSenderId, etc. if present in your config
-        });
-    
-        // Optional: only if you have a backend issuing custom tokens
-        // window.__initial_auth_token = "eyJhbGciOi…";
-      </script>
-    <!-- <script type="module">
-        // Import the functions you need from the SDKs you need
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-analytics.js";
-        // TODO: Add SDKs for Firebase products that you want to use
-        // https://firebase.google.com/docs/web/setup#available-libraries
-      
-        // Your web app's Firebase configuration
-        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-        const firebaseConfig = {
-          apiKey: "",
-          authDomain: "",
-          projectId: "",
-          storageBucket: "leetcodedashboard-fe04c.firebasestorage.app",
-          messagingSenderId: "765406102827",
-          appId: "",
-          measurementId: "G-MK3MMLESRN"
-        };
-      
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
-      </script> -->
+  </div>
 
-    <script type="module">
-        // 1. ENVIRONMENT GLOBALS & FIREBASE IMPORTS
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-        const BACKEND_URL = "https://getleetcodeactivity-zfvkczajpq-uc.a.run.app";
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, query, onSnapshot, addDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+  <!-- Edit Modal -->
+  <div id="editModal"
+       class="hidden fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center">
+    <div class="bg-white dark:bg-[#0f0f0f] w-full max-w-md rounded-xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
 
-        // 2. FIREBASE INITIALIZATION
-        let app, db, auth, userId = null;
-        let isAuthReady = false;
-        if (Object.keys(firebaseConfig).length > 0) {
-            app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-        } else {
-            console.error("Firebase config is missing.");
-            document.getElementById('auth-info').textContent = "Error: Firebase configuration missing.";
-        }
+      <h3 class="text-lg font-semibold dark:text-gray-100 mb-1">Edit Participant</h3>
+      <p class="text-gray-500 dark:text-gray-400 text-sm mb-5">Update details</p>
 
-        // 3. AUTHENTICATION & STATE
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                userId = user.uid;
-                document.getElementById('auth-info').innerHTML = `Authenticated as <span class="font-bold">${userId}</span>.`;
-                isAuthReady = true;
-                setupRealtimeListener();
-            } else {
-                try {
-                    if (initialAuthToken) {
-                        await signInWithCustomToken(auth, initialAuthToken);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
-                } catch (error) {
-                    console.error("Authentication failed:", error);
-                    document.getElementById('auth-info').textContent = `Authentication failed.`;
-                }
-            }
-        });
-        
-        // 4. FIRESTORE COLLECTION PATH
-        const participantsPath = `/artifacts/${appId}/public/data/dsa_participants`;
+      <form id="edit-participant-form" class="space-y-4">
+        <input id="edit-name-input" type="text" placeholder="Name"
+           class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2.5 text-sm bg-white dark:bg-black dark:text-white" required>
 
-        // 5. UI HELPERS
-        const listEl = document.getElementById('participants-list');
-        const countEl = document.getElementById('participant-count');
-        const formEl = document.getElementById('participant-form');
-        const nameInput = document.getElementById('name-input');
-        const handleInput = document.getElementById('handle-input');
-        const formError = document.getElementById('form-error');
+        <input id="edit-handle-input" type="text" placeholder="LeetCode Handle"
+           class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2.5 text-sm bg-white dark:bg-black dark:text-white" required>
 
-        formEl.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            formError.classList.add('hidden');
-            const name = nameInput.value.trim();
-            const handle = handleInput.value.trim();
-            if (!name || !handle) {
-                formError.textContent = 'Please provide both name and handle.';
-                formError.classList.remove('hidden');
-                return;
-            }
-            try {
-                await addDoc(collection(db, participantsPath), {
-                    name,
-                    handle,
-                    addedBy: userId || 'anonymous',
-                    addedAt: new Date().toISOString()
-                });
-                nameInput.value = '';
-                handleInput.value = '';
-            } catch (err) {
-                console.error(err);
-                formError.textContent = 'Failed to add participant. Please try again.';
-                formError.classList.remove('hidden');
-            }
-        });
+        <p id="edit-form-error" class="text-sm text-red-600 dark:text-red-400 hidden"></p>
 
-        // 6. REAL-TIME LISTENER
-        function setupRealtimeListener() {
-            if (!isAuthReady || !userId) return;
-            const q = query(collection(db, participantsPath));
-            onSnapshot(q, (snap) => {
-                const participants = [];
-                snap.forEach((docSnap) => {
-                    const data = docSnap.data();
-                    participants.push({ id: docSnap.id, ...data });
-                });
-                participants.sort((a, b) => a.name.localeCompare(b.name));
-                renderParticipants(participants);
-            }, (error) => {
-                console.error('Snapshot error', error);
-            });
-        }
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" id="closeEditModal" class="text-gray-600 dark:text-gray-300 text-sm">Cancel</button>
+          <button class="bg-black text-white dark:bg-white dark:text-black px-4 py-2 text-sm rounded-lg">
+            Update
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 
-        function renderParticipants(participants) {
-            countEl.textContent = String(participants.length);
-            listEl.innerHTML = '';
-            participants.forEach((p) => {
-                const card = document.createElement('div');
-                card.className = 'monitor-card border rounded-lg p-4';
+  <!-- Participants -->
+  <div class="flex justify-between items-center mb-2 mt-6">
+    <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Participants</h2>
+    <span id="participant-count"
+      class="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg">
+    0</span>
+  </div>
 
-                const header = document.createElement('div');
-                header.className = 'flex items-center justify-between';
-                header.innerHTML = `
-                    <div>
-                        <div class="font-semibold text-gray-900">${escapeHtml(p.name)}</div>
-                        <div class="text-sm text-gray-500">@${escapeHtml(p.handle)}</div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button data-action="refresh" class="px-3 py-1 rounded border text-sm">Refresh</button>
-                        <button data-action="delete" class="px-3 py-1 rounded bg-red-600 text-white text-sm">Delete</button>
-                    </div>
-                `;
+  <div id="participants-list" class="space-y-3"></div>
+</div>
 
-                const activity = document.createElement('div');
-                activity.className = 'mt-3 text-sm text-gray-700';
-                activity.innerHTML = skeletonActivity();
+<!-- ================= FIREBASE + APP LOGIC ================== -->
+<script type="module">
 
-                card.appendChild(header);
-                card.appendChild(activity);
-                listEl.appendChild(card);
+// ✅ Firebase config
+window.__app_id = "my-dsa-series";
+window.__firebase_config = JSON.stringify({
+  apiKey: "AIzaSyBycjUTbfinX-rYAz30vXFMIY3BQS3iBQI",
+  authDomain: "leetcodedashboard-fe04c.firebaseapp.com",
+  projectId: "leetcodedashboard-fe04c",
+  appId: "1:765406102827:web:c85c7e1fba31279633b16e"
+});
+const BACKEND_URL = "https://getleetcodeactivity-zfvkczajpq-uc.a.run.app";
 
-                const refreshBtn = header.querySelector('[data-action="refresh"]');
-                refreshBtn.addEventListener('click', () => fetchActivityForParticipant(p.handle, activity));
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, collection, query, onSnapshot, addDoc, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-                const deleteBtn = header.querySelector('[data-action="delete"]');
-                deleteBtn.addEventListener('click', async () => {
-                    const confirmed = await showModal('Delete Participant', `Are you sure you want to remove ${escapeHtml(p.name)} (@${escapeHtml(p.handle)})?`);
-                    if (!confirmed) return;
-                    try {
-                        await deleteDoc(doc(db, participantsPath, p.id));
-                    } catch (err) {
-                        console.error('Delete failed', err);
-                        await showModal('Error', 'Failed to delete participant.');
-                    }
-                });
+const app = initializeApp(JSON.parse(window.__firebase_config));
+const db = getFirestore(app);
+const auth = getAuth(app);
+const participantsPath = `/artifacts/${window.__app_id}/public/data/dsa_participants`;
 
-                // auto-fetch on render
-                fetchActivityForParticipant(p.handle, activity);
-            });
-        }
+const listEl = document.getElementById("participants-list");
+const countEl = document.getElementById("participant-count");
+const nameInput = document.getElementById("name-input");
+const handleInput = document.getElementById("handle-input");
+const formError = document.getElementById("form-error");
+const editNameInput = document.getElementById("edit-name-input");
+const editHandleInput = document.getElementById("edit-handle-input");
+const editFormError = document.getElementById("edit-form-error");
 
-        function skeletonActivity() {
-            return `
-                <div class="flex items-center gap-2 text-blue-700">
-                    <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                    </svg>
-                    <span>Fetching activity...</span>
-                </div>
-            `;
-        }
+// ✅ Modal actions
+const addModal = document.getElementById("addModal");
+const editModal = document.getElementById("editModal");
+document.getElementById("openAddModal").onclick = ()=> addModal.classList.remove("hidden");
+document.getElementById("closeAddModal").onclick = ()=> addModal.classList.add("hidden");
+document.getElementById("closeEditModal").onclick = ()=> editModal.classList.add("hidden");
 
-        // 7. MOCK ACTIVITY SERVICE
-        async function fetchActivityFromBackend(handle) {
-    if (!BACKEND_URL) {
-        throw new Error('Backend URL is not configured.');
-    }
+// Close modals when clicking outside
+addModal.addEventListener("click", (e) => {
+  if (e.target === addModal) addModal.classList.add("hidden");
+});
+editModal.addEventListener("click", (e) => {
+  if (e.target === editModal) editModal.classList.add("hidden");
+});
 
-    // 1. Build the full URL, adding the handle as a query parameter
-    const url = `${BACKEND_URL}?handle=${encodeURIComponent(handle)}`;
+let currentEditId = null;
 
-    // 2. Make the HTTP request to your Cloud Function
-    const response = await fetch(url);
+// ✅ Dark Mode
+const themeBtn = document.getElementById("themeToggle");
+const themeIcon = document.getElementById("themeIcon");
+const themeText = document.getElementById("themeText");
 
-    // 3. Check for errors from your server
-    if (!response.ok) {
-        let errorMsg = `Server error (${response.status})`;
-        try {
-            // Try to get a helpful error message from the JSON response
-            const errorData = await response.json();
-            if (errorData.error) {
-                errorMsg = errorData.error; 
-            }
-        } catch {} 
-        throw new Error(errorMsg);
-    }
-
-    // 4. Return the processed data
-    const data = await response.json();
-    return data;
+function updateThemeButton(isDark) {
+  if (isDark) {
+    themeIcon.textContent = "☀️";
+    themeText.textContent = "Light Mode";
+  } else {
+    themeIcon.textContent = "🌙";
+    themeText.textContent = "Dark Mode";
+  }
 }
 
-        function renderActivity(data) {
-            const breakdown = data.difficultyBreakdown;
-            return `
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    <div class="p-2 bg-gray-50 rounded">
-                        <div class="text-xs text-gray-500">Total Solved</div>
-                        <div class="text-lg font-semibold">${data.totalSolved}</div>
-                    </div>
-                    <div class="p-2 bg-gray-50 rounded">
-                        <div class="text-xs text-gray-500">Easy/Med/Hard</div>
-                        <div class="text-lg font-semibold">${breakdown.easy}/${breakdown.medium}/${breakdown.hard}</div>
-                    </div>
-                    <div class="p-2 bg-gray-50 rounded">
-                        <div class="text-xs text-gray-500">Contest Rating</div>
-                        <div class="text-lg font-semibold">${data.contestRating}</div>
-                    </div>
-                    <div class="p-2 bg-gray-50 rounded">
-                        <div class="text-xs text-gray-500">Recent</div>
-                        <div class="text-sm">${data.recentSubmission.title} <span class="text-gray-500">(${data.recentSubmission.status})</span></div>
-                    </div>
-                </div>
-            `;
-        }
+// Init theme based on saved preference or system
+if (localStorage.theme === "dark" || 
+    (!("theme" in localStorage) && window.matchMedia("(prefers-color-scheme: dark)").matches)
+) {
+  document.documentElement.classList.add("dark");
+  updateThemeButton(true);
+} else {
+  document.documentElement.classList.remove("dark");
+  updateThemeButton(false);
+}
 
-        async function fetchActivityForParticipant(handle, containerEl) {
-    containerEl.innerHTML = skeletonActivity();
+themeBtn.onclick = () => {
+  const isDark = document.documentElement.classList.toggle("dark");
+  localStorage.theme = isDark ? "dark" : "light";
+  updateThemeButton(isDark);
+};
+
+
+// ✅ Auth
+onAuthStateChanged(auth, (user)=>{
+  if (user) {
+    document.getElementById("auth-info").textContent = `Signed in: ${user.uid.slice(0,6)}...`;
+    onSnapshot(query(collection(db, participantsPath)), snap=>{
+      const arr = []; snap.forEach(d=>arr.push({id:d.id, ...d.data()}));
+      arr.sort((a,b)=>a.name.localeCompare(b.name));
+      render(arr);
+    });
+  } else signInAnonymously(auth);
+});
+
+// ✅ Add Participant
+document.getElementById("participant-form").addEventListener("submit", async e=>{
+  e.preventDefault();
+  formError.classList.add("hidden");
+  try {
+    await addDoc(collection(db, participantsPath), {
+      name: nameInput.value.trim(),
+      handle: handleInput.value.trim(),
+    });
+    addModal.classList.add("hidden");
+    nameInput.value = ""; handleInput.value = "";
+  } catch {
+    formError.textContent = "Error adding participant!"; formError.classList.remove("hidden");
+  }
+});
+
+// ✅ Edit Participant
+document.getElementById("edit-participant-form").addEventListener("submit", async e=>{
+  e.preventDefault();
+  editFormError.classList.add("hidden");
+  if (!currentEditId) return;
+  try {
+    await updateDoc(doc(db, participantsPath, currentEditId), {
+      name: editNameInput.value.trim(),
+      handle: editHandleInput.value.trim(),
+    });
+    editModal.classList.add("hidden");
+    currentEditId = null;
+    editNameInput.value = ""; editHandleInput.value = "";
+  } catch {
+    editFormError.textContent = "Error updating participant!"; editFormError.classList.remove("hidden");
+  }
+});
+
+// ✅ Helper function to escape HTML attributes
+function escapeHtml(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ✅ Open edit modal
+window.openEditModal = (id) => {
+  const participant = window.participantsMap?.get(id);
+  if (!participant) return;
+  currentEditId = id;
+  editNameInput.value = participant.name;
+  editHandleInput.value = participant.handle;
+  editFormError.classList.add("hidden");
+  editModal.classList.remove("hidden");
+};
+
+// ✅ Render Participants with accordion stats
+function render(list){
+  listEl.innerHTML = "";
+  countEl.textContent = list.length;
+  
+  // Store participants in a map for easy access
+  window.participantsMap = new Map();
+  list.forEach(p => window.participantsMap.set(p.id, p));
+
+  list.forEach(p=>{
+    const wrapper = document.createElement("div");
+    wrapper.className="border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-black overflow-hidden";
+
+    const btn = document.createElement("button");
+    btn.className="w-full flex justify-between px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-900 transition";
+    btn.innerHTML = `
+      <div>
+        <div class="font-medium dark:text-gray-100">${p.name}</div>
+        <div class="text-xs text-gray-500 dark:text-gray-400">@${p.handle}</div>
+      </div>
+      <span class="arrow text-gray-500 dark:text-gray-400 text-lg">▼</span>
+    `;
+
+    const content = document.createElement("div");
+    content.className = "hidden border-t border-gray-200 dark:border-gray-800 p-4 text-sm";
+    content.innerHTML = "Loading...";
+
+    wrapper.appendChild(btn);
+    wrapper.appendChild(content);
+    listEl.appendChild(wrapper);
+
+    let loaded = false;
+
+    btn.onclick = async ()=>{
+      content.classList.toggle("hidden");
+      btn.querySelector(".arrow").style.transform =
+        content.classList.contains("hidden") ? "rotate(0deg)" : "rotate(180deg)";
+
+      if(!loaded){
+        try{
+          const res = await fetch(`${BACKEND_URL}?handle=${p.handle}`);
+          const data = await res.json();
+          content.innerHTML = `
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs dark:text-gray-200 mb-4">
+              <div><b>Total:</b> ${data.totalSolved}</div>
+              <div><b>E/M/H:</b> ${data.difficultyBreakdown.easy}/${data.difficultyBreakdown.medium}/${data.difficultyBreakdown.hard}</div>
+              <div><b>Rating:</b> ${data.contestRating}</div>
+              <div><b>Recent:</b> ${data.recentSubmission.title}</div>
+            </div>
+
+            <div class="flex gap-2">
+              <button class="text-blue-500 dark:text-blue-400 text-xs border border-blue-500 dark:border-blue-400 px-3 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition"
+                onclick="openEditModal('${p.id}')">✏️ Edit</button>
+              <button class="text-red-500 dark:text-red-400 text-xs border border-red-500 dark:border-red-400 px-3 py-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition"
+                onclick="deleteParticipant('${p.id}')">🗑️ Delete</button>
+            </div>
+          `;
+        }catch{
+          content.innerHTML = `
+            <div class="mb-4">
+              <span class="text-yellow-600 dark:text-yellow-400 text-xs">⚠️ Could not fetch LeetCode data (handle may be invalid)</span>
+            </div>
+            <div class="flex gap-2">
+              <button class="text-blue-500 dark:text-blue-400 text-xs border border-blue-500 dark:border-blue-400 px-3 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition"
+                onclick="openEditModal('${p.id}')">✏️ Edit</button>
+              <button class="text-red-500 dark:text-red-400 text-xs border border-red-500 dark:border-red-400 px-3 py-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition"
+                onclick="deleteParticipant('${p.id}')">🗑️ Delete</button>
+            </div>
+          `;
+        }
+        loaded = true;
+      }
+    };
+  });
+}
+
+// ✅ Delete function
+window.deleteParticipant = async (id) => {
+  const participant = window.participantsMap?.get(id);
+  if (!participant) return;
+  
+  if (confirm(`Are you sure you want to delete "${participant.name}"? This action cannot be undone.`)) {
     try {
-        // *** CALL THE NEW FUNCTION ***
-        const data = await fetchActivityFromBackend(handle); 
-        containerEl.innerHTML = renderActivity(data);
-    } catch (err) {
-        console.error(`Activity fetch failed for ${handle}:`, err);
-        containerEl.innerHTML = `<span class="text-red-600">Failed: ${escapeHtml(err.message)}.</span>`;
+      await deleteDoc(doc(db, participantsPath, id));
+    } catch (error) {
+      alert("Error deleting participant. Please try again.");
     }
-}
+  }
+};
 
-        function seededRandom(seed) {
-            let h = 2166136261 >>> 0;
-            for (let i = 0; i < seed.length; i++) {
-                h ^= seed.charCodeAt(i);
-                h = Math.imul(h, 16777619);
-            }
-            return function() {
-                h += 0x6D2B79F5;
-                let t = Math.imul(h ^ (h >>> 15), 1 | h);
-                t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
-                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-            };
-        }
-
-        function wait(ms) {
-            return new Promise(res => setTimeout(res, ms));
-        }
-
-        function escapeHtml(str) {
-            return String(str).replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-        }
-
-        // 8. PROMISE-BASED MODAL
-        function showModal(title, message) {
-            return new Promise((resolve) => {
-                const root = document.getElementById('modal-root');
-                const titleEl = document.getElementById('modal-title');
-                const msgEl = document.getElementById('modal-message');
-                const okBtn = document.getElementById('modal-ok');
-                const cancelBtn = document.getElementById('modal-cancel');
-
-                titleEl.textContent = title;
-                msgEl.textContent = message;
-                root.classList.remove('hidden');
-                root.classList.add('flex');
-
-                function cleanup(result) {
-                    okBtn.removeEventListener('click', onOk);
-                    cancelBtn.removeEventListener('click', onCancel);
-                    root.classList.add('hidden');
-                    root.classList.remove('flex');
-                    resolve(result);
-                }
-                function onOk() { cleanup(true); }
-                function onCancel() { cleanup(false); }
-
-                okBtn.addEventListener('click', onOk, { once: true });
-                cancelBtn.addEventListener('click', onCancel, { once: true });
-            });
-        }
-
-    </script>
+</script>
 </body>
 </html>
