@@ -42,6 +42,24 @@ body { font-family: Inter, sans-serif; }
 
 <div class="max-w-4xl mx-auto">
 
+  <!-- Auth Gate Overlay -->
+  <div id="auth-gate" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-white dark:bg-[#0f0f0f] opacity-95"></div>
+    <div class="relative z-10 h-full w-full flex items-center justify-center p-6">
+      <div class="max-w-md w-full border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-black shadow-xl p-6 text-center">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Sign in required</h2>
+        <p id="auth-gate-message" class="mt-2 text-sm text-gray-600 dark:text-gray-400">Please sign in with your Google account to continue.</p>
+        <div class="mt-5 flex flex-col gap-3">
+          <button id="googleSignInBtn" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-900">
+            <span>🔐</span>
+            <span>Continue with Google</span>
+          </button>
+          <button id="signOutBtn" class="hidden text-xs text-gray-600 dark:text-gray-300 underline">Sign out</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Add Participant Button -->
   <div class="flex justify-end mb-4">
     <button id="openAddModal"
@@ -129,7 +147,7 @@ window.__firebase_config = JSON.stringify({
 const BACKEND_URL = "https://getleetcodeactivity-zfvkczajpq-uc.a.run.app";
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, query, onSnapshot, addDoc, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 const app = initializeApp(JSON.parse(window.__firebase_config));
@@ -196,16 +214,67 @@ themeBtn.onclick = () => {
 };
 
 
-// ✅ Auth
+// ✅ Auth (Google Sign-In with allowlist)
+const ALLOWED_EMAILS = [
+  // TODO: Replace with your allowed emails
+  "himamshus06@gmail.com",
+  "anujna27116k@gmail.com"
+];
+
+const authGateEl = document.getElementById("auth-gate");
+const authGateMsgEl = document.getElementById("auth-gate-message");
+const googleBtn = document.getElementById("googleSignInBtn");
+const signOutBtn = document.getElementById("signOutBtn");
+
+function showAuthGate(message) {
+  if (message) authGateMsgEl.textContent = message;
+  authGateEl.classList.remove("hidden");
+}
+
+function hideAuthGate() {
+  authGateEl.classList.add("hidden");
+}
+
+googleBtn.onclick = async () => {
+  try {
+    const provider = new GoogleAuthProvider();
+    await signInWithPopup(auth, provider);
+  } catch (e) {
+    showAuthGate("Sign-in failed. Please try again.");
+  }
+};
+
+signOutBtn.onclick = async () => {
+  try { await signOut(auth); } catch {}
+};
+
 onAuthStateChanged(auth, (user)=>{
-  if (user) {
-    document.getElementById("auth-info").textContent = `Signed in: ${user.uid.slice(0,6)}...`;
-    onSnapshot(query(collection(db, participantsPath)), snap=>{
-      const arr = []; snap.forEach(d=>arr.push({id:d.id, ...d.data()}));
-      arr.sort((a,b)=>a.name.localeCompare(b.name));
-      render(arr);
-    });
-  } else signInAnonymously(auth);
+  if (!user) {
+    document.getElementById("auth-info").textContent = "Not signed in";
+    signOutBtn.classList.add("hidden");
+    showAuthGate("Please sign in with your Google account to continue.");
+    return;
+  }
+
+  const email = user.email || "";
+  const allowed = email && ALLOWED_EMAILS.map(e=>e.toLowerCase()).includes(email.toLowerCase());
+
+  if (!allowed) {
+    document.getElementById("auth-info").textContent = email ? `Access denied for ${email}` : "Access denied";
+    signOutBtn.classList.remove("hidden");
+    showAuthGate("Your email is not allowed to access this page.");
+    return;
+  }
+
+  hideAuthGate();
+  signOutBtn.classList.remove("hidden");
+  document.getElementById("auth-info").textContent = `Signed in: ${email}`;
+
+  onSnapshot(query(collection(db, participantsPath)), snap=>{
+    const arr = []; snap.forEach(d=>arr.push({id:d.id, ...d.data()}));
+    arr.sort((a,b)=>a.name.localeCompare(b.name));
+    render(arr);
+  });
 });
 
 // ✅ Add Participant
